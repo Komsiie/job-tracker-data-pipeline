@@ -8,6 +8,16 @@ from datetime import datetime, timezone
 API_KEY = os.environ["API_KEY"]
 queries = os.environ["QUERIES"].split("|")
 BUCKET_NAME = os.environ["BUCKET_NAME"]
+
+if not API_KEY:
+    raise ValueError("Missing CLIENT_ID environment variable")
+
+if not BUCKET_NAME:
+    raise ValueError("Missing BUCKET_NAME environment variable")
+
+if not queries or queries == [""]:
+    raise ValueError("Missing QUERIES environment variable")
+
 s3 = boto3.client(
     "s3")
 

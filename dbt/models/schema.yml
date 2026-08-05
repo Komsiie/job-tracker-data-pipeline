@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: stg_jobs
+    description: "Staged jobs from the JSearch API."
+    columns:
+      - name: job_id
+        description: "Unique identifier for the job posting."
+        tests:
+          - not_null
+
+      - name: job_uid
+        description: "Alternate unique identifier provided by the API."
+        tests:
+          - not_null
+
+      - name: job_title
+        description: "Job title"
+        tests:
+          - not_null
+
+      - name: employer_name
+        description: "Employer offering the job."
+        tests:
+          - not_null
