@@ -31,10 +31,14 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   jobtracker:
-    # Config indicated by + and applies to all files under models/example/
     staging:
+      +schema: STAGING
       +materialized: view
+
     intermediate:
+      +schema: INTERMEDIATE
       +materialized: view
+
     marts:
+      +schema: MARTS
       +materialized: table

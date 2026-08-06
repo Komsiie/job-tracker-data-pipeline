@@ -1,6 +1,21 @@
 version: 2
 
 models:
+  
+  - name: dim_skills
+    columns:
+      - name: skill_sk
+        tests:
+          - unique
+          - not_null
+
+      - name: skill_name
+        tests:
+          - not_null
+
+      - name: skill_category
+        tests:
+          - not_null
   - name: stg_jobs
     description: "Staged jobs from the JSearch API."
     columns:
@@ -21,5 +36,20 @@ models:
 
       - name: employer_name
         description: "Employer offering the job."
+        tests:
+          - not_null
+
+seeds:
+  - name: skill_lookup
+    columns:
+      - name: skill_name
+        tests:
+          - not_null
+
+      - name: skill_category
+        tests:
+          - not_null
+
+      - name: match_text
         tests:
           - not_null
