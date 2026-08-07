@@ -1,0 +1,98 @@
+skill_category,skill_name,match_text
+Programming Language,Python,python
+Programming Language,SQL,sql
+Programming Language,Java,java
+Programming Language,Scala,scala
+Programming Language,R,r
+Programming Language,Go,go
+Programming Language,Go,golang
+Programming Language,Bash,bash
+Programming Language,Bash,shell
+Data Warehouse,Snowflake,snowflake
+Data Warehouse,Snowflake,snowflake data cloud
+Data Warehouse,Redshift,redshift
+Data Warehouse,BigQuery,bigquery
+Data Warehouse,BigQuery,big query
+Data Warehouse,Synapse,synapse
+Data Warehouse,Synapse,azure synapse
+Data Warehouse,Databricks,databricks
+ETL / ELT,dbt,dbt
+ETL / ELT,dbt,dbt cloud
+ETL / ELT,Airflow,airflow
+ETL / ELT,Apache Airflow,apache airflow
+ETL / ELT,Fivetran,fivetran
+ETL / ELT,Informatica,informatica
+ETL / ELT,Talend,talend
+ETL / ELT,SSIS,ssis
+ETL / ELT,Matillion,matillion
+Cloud,AWS,aws
+Cloud,AWS,amazon web services
+Cloud,Azure,azure
+Cloud,Microsoft Azure,microsoft azure
+Cloud,GCP,gcp
+Cloud,GCP,google cloud
+Cloud,GCP,google cloud platform
+Storage,S3,s3
+Storage,ADLS,adls
+Storage,ADLS,azure data lake
+Storage,ADLS,azure data lake storage
+Storage,Blob Storage,azure blob
+Storage,Blob Storage,blob storage
+Streaming,Kafka,kafka
+Streaming,Apache Kafka,apache kafka
+Streaming,Kinesis,kinesis
+Streaming,Spark Streaming,spark streaming
+Big Data,Spark,spark
+Big Data,Apache Spark,apache spark
+Big Data,Hadoop,hadoop
+Big Data,Hive,hive
+Database,PostgreSQL,postgres
+Database,PostgreSQL,postgresql
+Database,SQL Server,sql server
+Database,SQL Server,mssql
+Database,Oracle,oracle
+Database,MySQL,mysql
+Database,MongoDB,mongodb
+Analytics,Power BI,power bi
+Analytics,Power BI,pbi
+Analytics,Tableau,tableau
+Analytics,Looker,looker
+Analytics,Excel,excel
+Analytics,Sigma,sigma
+Data Modeling,Kimball,kimball
+Data Modeling,Star Schema,star schema
+Data Modeling,Dimensional Modeling,dimensional modeling
+Data Modeling,Data Vault,data vault
+Data Modeling,Schema Design,schema design
+Data Governance,Data Governance,data governance
+Data Governance,Data Contracts,data contract
+Data Governance,DataContracts,data contracts
+Data Governance,RBAC,rbac
+Data Governance,RBAC,role based access control
+Data Governance,RBAC,role-based access control
+DevOps,Git,git
+DevOps,GitHub Actions,github actions
+DevOps,GitHub Actions,gha
+DevOps,Docker,docker
+DevOps,Kubernetes,kubernetes
+DevOps,Kubernetes,k8s
+DevOps,Terraform,terraform
+DevOps,CI/CD,ci/cd
+DevOps,CI/CD,continuous integration
+DevOps,CI/CD,continuous delivery
+API,REST API,rest api
+API,REST API,restful api
+API,REST API,restful
+API,JSON,json
+API,XML,xml
+Data Quality,Great Expectations,great expectations
+Data Quality,Monte Carlo,monte carlo
+Testing,Data Quality,data quality
+Testing,dbt Tests,dbt tests
+Testing,dbt Tests,writing tests
+Documentation,Documentation,documentation
+Soft Skill,Communication,communication
+Soft Skill,Problem Solving,problem solving
+Soft Skill,Collaboration,collaboration
+Soft Skill,Stakeholder Management,stakeholder
+Soft Skill,Stakeholder Management,stakeholder management

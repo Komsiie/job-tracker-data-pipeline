@@ -1,0 +1,8 @@
+version: 2
+sources:
+  - name: raw
+    database: JOB_DB
+    schema: raw
+
+    tables:
+      - name: RAW_JOBS_API

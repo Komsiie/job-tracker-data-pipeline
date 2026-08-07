@@ -1,0 +1,98 @@
+version: 2
+
+models:
+
+  - name: stg_jobs
+    description: "Staged jobs from the JSearch API."
+    columns:
+      - name: job_id
+        description: "Unique identifier for the job posting."
+        tests:
+          - not_null
+      - name: job_uid
+        description: "Alternate unique identifier provided by the API."
+        tests:
+          - not_null
+      - name: job_title
+        description: "Job title"
+        tests:
+          - not_null
+      - name: employer_name
+        description: "Employer offering the job."
+        tests:
+          - not_null
+  
+  - name: dim_skills
+    columns:
+      - name: skill_sk
+        tests:
+          - unique
+          - not_null
+      - name: skill_name
+        tests:
+          - unique
+          - not_null
+      - name: skill_category
+        tests:
+          - not_null
+
+  - name: bridge_job_skills
+    description: Bridge table linking job postings to extracted skills.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - job_posting_sk
+            - skill_sk
+    columns:
+      - name: job_posting_sk
+        tests:
+          - not_null
+      - name: skill_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_skills')
+              field: skill_sk
+  - name: dim_employer
+    columns:
+      - name: employer_sk
+        tests: 
+          - unique
+          - not_null
+      - name: employer_name
+        tests:
+          - unique
+          - not_null
+  - name: dim_location
+    columns:
+      - name: location_sk
+        description: "Surrogate key generated from job_city, job_state, job_country"
+        tests:
+          - unique
+          - not_null
+      - name: job_city
+        description: "City or 'Unknown if not provided"
+        tests:
+          - not_null
+      - name: job_state
+        tests:
+          - not_null
+
+      - name: job_country
+        tests:
+          - not_null 
+
+seeds:
+  - name: skill_lookup
+    columns:
+      - name: skill_name
+        tests:
+          - not_null
+
+      - name: skill_category
+        tests:
+          - not_null
+
+      - name: match_text
+        tests:
+          - not_null
