@@ -43,6 +43,10 @@ Repository Contents
 lambda/ – Python code for extracting job data and writing raw JSON files to Amazon S3.
 sql/ – Snowflake scripts for creating the database, storage integration, stage, file format, raw tables, manual load process, and Snowpipe.
 
+STAR SCHEMA
+A job posting can require multiple skills, and a skill can appear in many job postings. This many-to-many relationship is modeled using the BRIDGE_JOB_SKILLS table.
+![Star Schema](architecture/job_postings_star_schema.png)
+
 Future Enhancements
 Build dbt transformations
 Add incremental models
