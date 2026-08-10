@@ -1,14 +1,14 @@
 erDiagram
-    DIM_COMPANIES ||--o{ FACT_JOB_POSTINGS_SNAPSHOT : "company_sk"
+    DIM_EMPLOYER ||--o{ FACT_JOB_POSTINGS_SNAPSHOT : "employer_sk"
     DIM_LOCATIONS ||--o{ FACT_JOB_POSTINGS_SNAPSHOT : "location_sk"
-    FACT_JOB_POSTINGS_SNAPSHOT ||--o{ BRIDGE_JOB_SKILLS : "posting_key"
+    FACT_JOB_POSTINGS_SNAPSHOT ||--o{ BRIDGE_JOB_SKILLS : "job_posting_sk"
     DIM_SKILLS ||--o{ BRIDGE_JOB_SKILLS : "skill_sk"
 
     FACT_JOB_POSTINGS_SNAPSHOT {
-        string fact_job_postings_sk PK
-        string posting_key "grain key + bridge FK"
-        timestamp source_ingest_timestamp "grain / scrape event"
-        string company_sk FK
+        string fact_job_postings_sk PK "snapshot row surrogate key"
+        string job_posting_sk "logical job key + bridge FK"
+        timestamp scraped_at "source_ingest_timestamp; snapshot / scrape event"
+        string employer_sk FK
         string location_sk FK
         string job_title
         string employment_type
@@ -18,14 +18,16 @@ erDiagram
         string job_publisher
         number min_salary
         number max_salary
+        string salary_range
+        string salary_period
         date first_seen_date "derived, window fn"
         date last_seen_date "derived, window fn"
         boolean is_active "derived, window fn"
         timestamp snowflake_load_timestamp "audit only"
     }
 
-    DIM_COMPANIES {
-        string company_sk PK
+    DIM_EMPLOYER {
+        string employer_sk PK
         string employer_name
     }
 
@@ -43,6 +45,6 @@ erDiagram
     }
 
     BRIDGE_JOB_SKILLS {
-        string posting_key FK "from int_jobs, hash(job_uid, employer_name)"
+        string job_posting_sk FK "from int_jobs, hash(job_uid, employer_name)"
         string skill_sk FK
     }
