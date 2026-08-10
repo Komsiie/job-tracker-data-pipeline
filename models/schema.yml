@@ -80,7 +80,35 @@ models:
 
       - name: job_country
         tests:
-          - not_null 
+          - not_null
+
+  - name: fct_job_postings
+    tests: 
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - job_posting_sk
+            - source_ingest_timestamp
+    columns:
+    - name: fact_job_postings_sk
+      description:  fact_job_postings_sk is built from (job_posting_sk, source_ingest_timestamp)
+      tests:
+        - unique
+        - not_null
+    - name: employer_sk
+      description: "FK to dim_employer, falls back to normalized 'Unknown' key when no employer match."
+      tests:
+        - not_null
+        - relationships:
+            to: ref('dim_employer')
+            field: employer_sk
+
+    - name: location_sk
+      description: "FK to dim_location, falls back to 'Unknown'/'Unknown'/'Unknown' key when no location match."
+      tests:
+        - not_null
+        - relationships:
+            to: ref('dim_location')
+            field: location_sk
 
 seeds:
   - name: skill_lookup
