@@ -5,22 +5,21 @@ models:
   - name: stg_jobs
     description: "Staged jobs from the JSearch API."
     columns:
-      - name: job_id
-        description: "Unique identifier for the job posting."
-        tests:
-          - not_null
-      - name: job_uid
-        description: "Alternate unique identifier provided by the API."
-        tests:
-          - not_null
-      - name: job_title
-        description: "Job title"
-        tests:
-          - not_null
-      - name: employer_name
-        description: "Employer offering the job."
-        tests:
-          - not_null
+    - name: job_id
+      tests:
+        - not_null
+
+    - name: job_uid
+      tests:
+        - not_null
+
+    - name: job_title
+      tests:
+        - not_null
+
+    - name: employer_name
+      tests:
+        - not_null
   
   - name: dim_skills
     columns:
@@ -71,7 +70,7 @@ models:
           - unique
           - not_null
       - name: job_city
-        description: "City or 'Unknown if not provided"
+        description: "City or 'Unknown' if not provided"
         tests:
           - not_null
       - name: job_state
@@ -87,12 +86,16 @@ models:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns:
             - job_posting_sk
-            - source_ingest_timestamp
+            - scraped_at
     columns:
     - name: fact_job_postings_sk
-      description:  fact_job_postings_sk is built from (job_posting_sk, source_ingest_timestamp)
+      description:  Surrogate key generated from job_posting_sk and scraped_at.
       tests:
         - unique
+        - not_null
+    - name: job_posting_sk
+      description: "Logical job identifier generated from job_uid and employer_name."
+      tests:
         - not_null
     - name: employer_sk
       description: "FK to dim_employer, falls back to normalized 'Unknown' key when no employer match."
@@ -112,6 +115,11 @@ models:
 
 seeds:
   - name: skill_lookup
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - skill_name
+            - match_text
     columns:
       - name: skill_name
         tests:
