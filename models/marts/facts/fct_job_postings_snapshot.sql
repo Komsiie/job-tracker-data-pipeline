@@ -1,9 +1,8 @@
 SELECT
-
     {{ dbt_utils.generate_surrogate_key([
         'i.job_posting_sk',
         'i.scraped_at'
-    ]) }} AS fact_job_postings_sk,
+    ]) }} AS fct_job_postings_sk,
 
     i.job_posting_sk,
 

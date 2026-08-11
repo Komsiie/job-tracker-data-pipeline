@@ -7,28 +7,30 @@
     from (
       
     
-  -- Every distinct (city, state, country) combo — including partial nulls —
--- present in int_jobs should have a row in dim_location.
-With source_combo as(
-    Select distinct
-    coalesce(job_city, 'Unknown') as job_city,
-    coalesce(job_state, 'Unknown') as job_state,
-    coalesce(job_country, 'Unknown') as job_country
-
-    from JOB_DB.INTERMEDIATE.int_jobs
+  WITH source_combo AS (
+    SELECT DISTINCT
+        COALESCE(job_city, 'UNKNOWN') AS job_city,
+        COALESCE(job_state, 'UNKNOWN') AS job_state,
+        COALESCE(job_country, 'UNKNOWN') AS job_country
+    FROM JOB_DB.INTERMEDIATE.int_jobs
 ),
-dim_combo as(
-    Select distinct job_city, job_state, job_country
-    from JOB_DB.MARTS.dim_location
+
+dim_combo AS (
+    SELECT DISTINCT
+        UPPER(job_city) AS job_city,
+        UPPER(job_state) AS job_state,
+        UPPER(job_country) AS job_country
+    FROM JOB_DB.MARTS.dim_location
 )
-Select 
+
+SELECT
     s.*
-from source_combo s
-left join dim_combo l
-    on s.job_city = l.job_city
-    and s.job_state = l.job_state
-    and s.job_country = l.job_country
-where l.job_city is null
+FROM source_combo s
+LEFT JOIN dim_combo l
+    ON UPPER(s.job_city) = l.job_city
+    AND UPPER(s.job_state) = l.job_state
+    AND UPPER(s.job_country) = l.job_country
+WHERE l.job_city IS NULL
   
   
       
