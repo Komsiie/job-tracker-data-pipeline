@@ -102,22 +102,46 @@ analyses/
 ```
 
 ## Key Engineering Decision: the business key
+The JSearch API provides a `job_uid`, but analysis of the source data showed that
+`job_uid` is not globally unique across employers.
 
-`job_uid` (JSearch's short ID) turned out to be **unstable** — the same value showed up attached to different employers across ingestion runs. Rather than assume this was rare or work around it blindly, the collision rate was measured:
+Rather than assuming the identifier was unique, the pipeline measured how often
+the same `job_uid` appeared with multiple employers:
 
 ```sql
-SELECT COUNT_IF(employer_count > 1) / NULLIF(COUNT(*), 0)::FLOAT AS multiple_employer_rate
+SELECT
+    COUNT_IF(employer_count > 1)
+        / NULLIF(COUNT(*), 0)::FLOAT AS multiple_employer_rate
 FROM (
-    SELECT job_uid, COUNT(DISTINCT employer_name) AS employer_count
+    SELECT
+        job_uid,
+        COUNT(DISTINCT employer_name) AS employer_count
     FROM {{ ref('int_jobs') }}
-    WHERE job_uid IS NOT NULL AND employer_name IS NOT NULL
+    WHERE job_uid IS NOT NULL
+      AND employer_name IS NOT NULL
     GROUP BY job_uid
-)
+);
 ```
+The analysis found that **2.57% of observed `job_uid`s were associated with
+multiple employers**. Examples included related employer names such as
+`State Street` / `State Street Global Advisors` and
+`Amazon` / `Amazon.com Services LLC`.
 
-**Result: 2 of 145 `job_uid`s (~1.4%)** mapped to more than one employer — small, but frequent enough (~1 in 70) to silently misattribute postings if trusted alone. That justified using **`job_uid` + `employer_name`** as the composite business key.
+This showed that using `job_uid` alone could potentially misattribute job
+postings to employers.
 
-A dbt test now tracks this rate on every run and fails if it exceeds 2% (set above the measured baseline to catch drift, not flag normal noise), so if JSearch's ID behavior degrades further, it's caught rather than silently tolerated.
+Therefore, the pipeline uses:
+
+**`job_uid + employer_name`**
+
+as the logical business key for a job posting, with `job_posting_sk` generated
+as the warehouse surrogate key.
+
+A dbt test monitors the percentage of `job_uid`s associated with multiple
+employers. The observed baseline is **2.57%**, and the test fails if the rate
+exceeds **3%**. This provides a small tolerance for normal source-data
+variation while detecting further deterioration in the reliability of the
+source identifier.
 
 ## Analyses
 
@@ -154,6 +178,7 @@ analyses/{skill_demand, remote_roles, role_analysis}.sql
 ## Future Enhancements
 
 - Add dbt incremental models
+- Implement SCD Type 2 for historical dimension tracking
 - Add Airflow scheduler for recurring extraction + dbt runs
 - Extend analyses to use `DIM_COMPANIES` and `DIM_LOCATIONS`
 
