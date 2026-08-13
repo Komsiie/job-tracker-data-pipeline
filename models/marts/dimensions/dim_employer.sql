@@ -5,5 +5,5 @@ WITH employers as(
 )
 Select 
 {{dbt_utils.generate_surrogate_key(['employer_name'])}} as employer_sk,
-employer_name
+employer_name,
 from employers

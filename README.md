@@ -1,71 +1,22 @@
 # Job Tracker Data Pipeline
 
-An end-to-end cloud data engineering pipeline that extracts live job postings from the JSearch Jobs API, lands raw data in Amazon S3, auto-ingests it into Snowflake via Snowpipe, and transforms it with dbt into analytics-ready models for tracking data engineering / analytics engineering job-market trends.
+An end-to-end cloud data engineering pipeline that extracts live job postings from the OpenWebNinja Google Jobs API, lands raw data in Amazon S3, auto-ingests it into Snowflake via Snowpipe, and transforms it with dbt into analytics-ready models for tracking data engineering / analytics engineering job-market trends.
 
 **Stack:** AWS Lambda · Amazon S3 · Snowflake · Snowpipe · dbt · Python · Airflow (planned)
 
 ## Overview
 
-This project simulates a production-style ELT pipeline for job-market analytics. Job postings are pulled on a recurring basis from the JSearch API (Google Jobs data), stored as raw JSON in S3, and automatically ingested into Snowflake using Snowpipe. dbt then transforms the raw VARIANT data through staging, intermediate, and mart layers into a star schema that supports analysis of in-demand skills, remote work trends, and role-level patterns.
+This project simulates a production-style ELT pipeline for job-market analytics. Job postings are pulled on a recurring basis from the [OpenWebNinja Google Jobs API](https://www.openwebninja.com/), stored as raw JSON in S3, and automatically ingested into Snowflake using Snowpipe. dbt then transforms the raw VARIANT data through staging, intermediate, and mart layers into a star schema that supports analysis of in-demand skills, remote work trends, and role-level patterns.
 
-The pipeline is designed to accumulate history across ingestion runs (not a one-time load), which surfaces real-world data engineering challenges around identifier stability, deduplication, and slowly changing data — see [Data Quality Notes](#data-quality-notes) below.
+The pipeline is designed to accumulate history across ingestion runs (not a one-time load), which surfaces real-world data engineering challenges around identifier stability, deduplication, and slowly changing data — see [Key Engineering Decision](#key-engineering-decision-the-business-key) below.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-
-    API["JSearch Jobs API<br/>Google Jobs Data"]
-    LAMBDA["AWS Lambda<br/>Job Extraction"]
-    S3["Amazon S3<br/>Raw JSON"]
-    EVENT["S3 Event Notification<br/>SQS Queue"]
-    SNOWPIPE["Snowpipe<br/>Auto Ingestion"]
-    RAW["Snowflake<br/>RAW_JOBS_API<br/>VARIANT"]
-    DBT["dbt"]
-    STG["Staging<br/>stg_jobs"]
-    INT["Intermediate<br/>int_jobs<br/>job skills"]
-    MARTS["Marts"]
-    FACT["FACT_JOB_POSTINGS_SNAPSHOT"]
-    COMPANY["DIM_COMPANIES"]
-    LOCATION["DIM_LOCATIONS"]
-    SKILLS["DIM_SKILLS"]
-    BRIDGE["BRIDGE_JOB_SKILLS"]
-    ANALYSIS["dbt Analyses<br/><br/>Skill Demand<br/>Remote Roles<br/>Role Analysis"]
-    AIRFLOW["Airflow (Planned)<br/>Orchestration"]
-
-    API -->|HTTP / JSON| LAMBDA
-    LAMBDA -->|Raw JSON| S3
-    S3 -->|Triggers| EVENT
-    EVENT -->|Notifies| SNOWPIPE
-    SNOWPIPE --> RAW
-
-    RAW --> DBT
-    DBT --> STG
-    STG --> INT
-    INT --> MARTS
-
-    MARTS --> FACT
-    MARTS --> COMPANY
-    MARTS --> LOCATION
-    MARTS --> SKILLS
-    MARTS --> BRIDGE
-
-    FACT -.->|FK| COMPANY
-    FACT -.->|FK| LOCATION
-
-    FACT --> ANALYSIS
-    SKILLS --> ANALYSIS
-    BRIDGE --> ANALYSIS
-
-    AIRFLOW -.->|Schedules, planned| LAMBDA
-    AIRFLOW -.->|Triggers, planned| DBT
-
-    style AIRFLOW stroke-dasharray: 5 5
-```
+See [docs/architecture.md](docs/architecture.md) for the full pipeline diagram, materialization strategy (view / incremental / table), and design rationale for the ingestion and transformation layers.
 
 ## Data Source
 
-Job postings are pulled from the [JSearch API](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch) (aggregated Google Jobs data), filtered to data engineering and analytics engineering roles. Each API response is written to S3 as raw JSON, preserving the full payload for reprocessing if the transformation logic changes.
+Job postings are pulled from the [OpenWebNinja Google Jobs API](https://www.openwebninja.com/), filtered to data engineering and analytics engineering roles. Each API response is written to S3 as raw JSON, preserving the full payload for reprocessing if the transformation logic changes. The current API plan has a 100 requests/month quota, which constrains run frequency and query/page volume.
 
 ## Data Model / Star Schema
 
@@ -75,7 +26,7 @@ A job posting can require multiple skills, and a skill can appear across many jo
 - **`DIM_COMPANIES`**, **`DIM_LOCATIONS`**, **`DIM_SKILLS`** — conformed dimensions
 - **`BRIDGE_JOB_SKILLS`** — resolves the many-to-many relationship between jobs and skills
 
-![Star Schema](architecture/job_postings_star_schema.png)
+![Star Schema](docs/job_postings_star_schema.png)
 
 Skill matching is driven by a seed file (`skill_category`, `skill_name`, `match_text`) that maps raw text in job descriptions to a normalized skill taxonomy, keyed off a surrogate key generated from `skill_name`.
 
@@ -84,9 +35,9 @@ Skill matching is driven by a seed file (`skill_category`, `skill_name`, `match_
 ```
 models/
 ├── staging/
-│   └── stg_jobs.sql          # 1:1 cleanup of raw VARIANT payload
+│   └── stg_jobs.sql          # 1:1 cleanup of raw VARIANT payload (view)
 ├── intermediate/
-│   └── int_jobs.sql          # skill extraction / parsing logic
+│   └── int_jobs.sql          # skill extraction / parsing logic (incremental, merge)
 └── marts/
     ├── fact_job_postings_snapshot.sql
     ├── dim_companies.sql
@@ -102,7 +53,7 @@ analyses/
 ```
 
 ## Key Engineering Decision: the business key
-The JSearch API provides a `job_uid`, but analysis of the source data showed that
+The source API provides a `job_uid`, but analysis of the source data showed that
 `job_uid` is not globally unique across employers.
 
 Rather than assuming the identifier was unique, the pipeline measured how often
@@ -135,7 +86,10 @@ Therefore, the pipeline uses:
 **`job_uid + employer_name`**
 
 as the logical business key for a job posting, with `job_posting_sk` generated
-as the warehouse surrogate key.
+as the warehouse surrogate key. `int_jobs` is materialized as an incremental
+model (merge strategy) on `job_uid, employer_name, scraped_at`, preserving one
+row per job per scrape rather than collapsing to latest-state — this history
+is what powers posting-active-duration analysis.
 
 A dbt test monitors the percentage of `job_uid`s associated with multiple
 employers. The observed baseline is **2.57%**, and the test fails if the rate
@@ -151,15 +105,6 @@ source identifier.
 
 > Company- and location-level cuts (`DIM_COMPANIES`, `DIM_LOCATIONS`) are modeled but not yet wired into an analysis — flagged under Future Enhancements.
 
-## dbt Structure
-
-```
-models/staging/stg_jobs.sql
-models/intermediate/int_jobs.sql
-models/marts/{fact_job_postings_snapshot, dim_companies, dim_locations, dim_skills, bridge_job_skills}.sql
-seeds/skills_seed.csv
-analyses/{skill_demand, remote_roles, role_analysis}.sql
-```
 ## Setup
 
 > Fill in with your actual commands/env vars before publishing.
@@ -177,10 +122,9 @@ analyses/{skill_demand, remote_roles, role_analysis}.sql
 
 ## Future Enhancements
 
-- Add dbt incremental models
-- Implement SCD Type 2 for historical dimension tracking
 - Add Airflow scheduler for recurring extraction + dbt runs
 - Extend analyses to use `DIM_COMPANIES` and `DIM_LOCATIONS`
+- Evaluate paid API tier if 100 requests/month quota limits scheduling cadence
 
 ---
 

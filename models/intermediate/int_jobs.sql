@@ -1,5 +1,17 @@
+{{
+    config(
+        materialized = 'incremental',
+        unique_key = ['job_uid', 'employer_name', 'scraped_at'],
+        incremental_startegy = 'merge',
+        on_schema_change = 'append_new_columns'
+    )
+}}
+
 With int_jobs as (
     Select * from {{ref('stg_jobs')}}
+{%if is_incremental() %}
+where source_ingest_timestamp > Select max(scraped_at) from {{this}}
+{% endif %}
 )
 Select 
 -- job_uid is not globally unique across all jobs.

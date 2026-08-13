@@ -1,5 +1,8 @@
+
+
 With int_jobs as (
     Select * from JOB_DB.STAGING.stg_jobs
+
 )
 Select 
 -- job_uid is not globally unique across all jobs.
