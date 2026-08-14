@@ -68,10 +68,10 @@ skill_percentages AS (
         s.job_role,
         s.jobs_pr_skill,
         t.jobs_pr_title,
-        ROUND(
+        COALESCE(ROUND(
             100.0 * s.jobs_pr_skill / NULLIF(t.jobs_pr_title, 0),
             2
-        ) AS skill_percentage
+        ), 0) AS skill_percentage
     FROM skills s
     JOIN job_totals t
         ON s.job_role = t.job_role
@@ -80,25 +80,31 @@ skill_percentages AS (
 SELECT 
     skill_name AS skill,
 
-    MAX(
-        CASE 
-            WHEN job_role = 'Data Engineer'
-                THEN skill_percentage
-        END
+    COALESCE(
+        MAX(
+            CASE 
+                WHEN job_role = 'Data Engineer'
+                    THEN skill_percentage
+            END
+        ), 0
     ) AS data_engineer,
 
-    MAX(
-        CASE 
-            WHEN job_role = 'Analytics Engineer'
-                THEN skill_percentage
-        END
+    COALESCE(
+        MAX(
+            CASE 
+                WHEN job_role = 'Analytics Engineer'
+                    THEN skill_percentage
+            END
+        ), 0
     ) AS analytics_engineer,
 
-    MAX(
-        CASE 
-            WHEN job_role = 'BI Engineer'
-                THEN skill_percentage
-        END
+    COALESCE(
+        MAX(
+            CASE 
+                WHEN job_role = 'BI Engineer'
+                    THEN skill_percentage
+            END
+        ), 0
     ) AS bi_engineer
 
 FROM skill_percentages

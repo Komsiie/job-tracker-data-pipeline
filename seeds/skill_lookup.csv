@@ -19,7 +19,7 @@ Data Warehouse,Databricks,databricks
 ETL / ELT,dbt,dbt
 ETL / ELT,dbt,dbt cloud
 ETL / ELT,Airflow,airflow
-ETL / ELT,Apache Airflow,apache airflow
+ETL / ELT,Airflow,apache airflow
 ETL / ELT,Fivetran,fivetran
 ETL / ELT,Informatica,informatica
 ETL / ELT,Talend,talend
@@ -27,23 +27,23 @@ ETL / ELT,SSIS,ssis
 ETL / ELT,Matillion,matillion
 Cloud,AWS,aws
 Cloud,AWS,amazon web services
+Cloud,AWS,s3
 Cloud,Azure,azure
-Cloud,Microsoft Azure,microsoft azure
+Cloud,Azure,microsoft azure
+Cloud,Azure,adls
+Cloud,Azure,azure data lake
+Cloud,Azure,azure data lake storage
+Cloud,Azure,azure blob
+Cloud,Azure,blob storage
 Cloud,GCP,gcp
 Cloud,GCP,google cloud
 Cloud,GCP,google cloud platform
-Storage,S3,s3
-Storage,ADLS,adls
-Storage,ADLS,azure data lake
-Storage,ADLS,azure data lake storage
-Storage,Blob Storage,azure blob
-Storage,Blob Storage,blob storage
 Streaming,Kafka,kafka
-Streaming,Apache Kafka,apache kafka
+Streaming,Kafka,apache kafka
 Streaming,Kinesis,kinesis
 Streaming,Spark Streaming,spark streaming
 Big Data,Spark,spark
-Big Data,Apache Spark,apache spark
+Big Data,Spark,apache spark
 Big Data,Hadoop,hadoop
 Big Data,Hive,hive
 Database,PostgreSQL,postgres
@@ -59,14 +59,14 @@ Analytics,Tableau,tableau
 Analytics,Looker,looker
 Analytics,Excel,excel
 Analytics,Sigma,sigma
-Data Modeling,Kimball,kimball
-Data Modeling,Star Schema,star schema
+Data Modeling,Dimensional Modeling,kimball
+Data Modeling,Dimensional Modeling,star schema
 Data Modeling,Dimensional Modeling,dimensional modeling
 Data Modeling,Data Vault,data vault
 Data Modeling,Schema Design,schema design
 Data Governance,Data Governance,data governance
 Data Governance,Data Contracts,data contract
-Data Governance,DataContracts,data contracts
+Data Governance,Data Contracts,data contracts
 Data Governance,RBAC,rbac
 Data Governance,RBAC,role based access control
 Data Governance,RBAC,role-based access control

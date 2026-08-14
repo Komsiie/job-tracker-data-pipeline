@@ -1,11 +1,11 @@
 # Architecture
 
-End-to-end pipeline for collecting live Data Engineer / Analytics Engineer / BI Engineer job postings and tracking skills-in-demand trends over time.
+End-to-end pipeline for collecting live Data Engineer / Analytics Engineer / BI Engineer job postings and viewing the percentage of skills appearing across each role's postings.
 
 ```mermaid
 flowchart LR
 
-    API["OpenWebNinja API<br/>Google Jobs Data"]
+    API["JSearch API<br/>via OpenWebNinja"]
     LAMBDA["AWS Lambda<br/>Job Extraction"]
     S3["Amazon S3<br/>Raw JSON"]
     EVENT["S3 Event Notification<br/>SQS Queue"]
@@ -59,10 +59,9 @@ flowchart LR
 
 ## Ingestion Layer
 
-- **AWS Lambda** calls the OpenWebNinja `google-jobs` API for a set of search queries and lands each response as raw, unmodified JSON in S3 (`raw/jobs/ingest_date=.../`).
-- Requests are retried with exponential backoff on 429/5xx before failing that query and moving on, so one throttled/failed query doesn't take down the whole run.
-- The API plan has a 100 requests/month quota, which constrains run frequency and query/page volume — worth checking usage before scaling up scheduling frequency once Airflow is wired in.
-- Raw landing intentionally accumulates scrape history over time rather than overwriting — this history is what powers the "how long does a posting stay active" analysis later.
+- **AWS Lambda** calls the JSearch API (hosted by OpenWebNinja, aggregating listings from LinkedIn, Indeed, Glassdoor, ZipRecruiter, and others via Google for Jobs) for a set of search queries and lands each response as raw, unmodified JSON in S3 (`raw/jobs/ingest_date=.../`).
+- The API plan has a 200 requests/month quota, which constrains run frequency and query/page volume — worth checking usage before scaling up scheduling frequency once Airflow is wired in.
+- Raw landing intentionally accumulates scrape history over time rather than overwriting — this history is what powers the "how long does a posting stay active" analysis later (planned; blocked this month by API quota).
 
 ## Transformation Layer (dbt)
 

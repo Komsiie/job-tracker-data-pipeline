@@ -1,12 +1,12 @@
 # Job Tracker Data Pipeline
 
-An end-to-end cloud data engineering pipeline that extracts live job postings from the OpenWebNinja Google Jobs API, lands raw data in Amazon S3, auto-ingests it into Snowflake via Snowpipe, and transforms it with dbt into analytics-ready models for tracking data engineering / analytics engineering job-market trends.
+An end-to-end cloud data engineering pipeline that extracts live job postings from the JSearch API (hosted by OpenWebNinja), lands raw data in Amazon S3, auto-ingests it into Snowflake via Snowpipe, and transforms it with dbt into analytics-ready models for viewing the percentage of skills appearing across Data Engineer / Analytics Engineer / BI Engineer job postings.
 
 **Stack:** AWS Lambda · Amazon S3 · Snowflake · Snowpipe · dbt · Python · Airflow (planned)
 
 ## Overview
 
-This project simulates a production-style ELT pipeline for job-market analytics. Job postings are pulled on a recurring basis from the [OpenWebNinja Google Jobs API](https://www.openwebninja.com/), stored as raw JSON in S3, and automatically ingested into Snowflake using Snowpipe. dbt then transforms the raw VARIANT data through staging, intermediate, and mart layers into a star schema that supports analysis of in-demand skills, remote work trends, and role-level patterns.
+This project simulates a production-style ELT pipeline for job-market analytics. Job postings are pulled on a recurring basis (see Data Source), stored as raw JSON in S3, and automatically ingested into Snowflake using Snowpipe.
 
 The pipeline is designed to accumulate history across ingestion runs (not a one-time load), which surfaces real-world data engineering challenges around identifier stability, deduplication, and slowly changing data — see [Key Engineering Decision](#key-engineering-decision-the-business-key) below.
 
@@ -16,7 +16,7 @@ See [docs/architecture.md](docs/architecture.md) for the full pipeline diagram, 
 
 ## Data Source
 
-Job postings are pulled from the [OpenWebNinja Google Jobs API](https://www.openwebninja.com/), filtered to data engineering and analytics engineering roles. Each API response is written to S3 as raw JSON, preserving the full payload for reprocessing if the transformation logic changes. The current API plan has a 100 requests/month quota, which constrains run frequency and query/page volume.
+Job postings are pulled from the [JSearch API](https://www.openwebninja.com/) (hosted by OpenWebNinja), which aggregates public job listings from LinkedIn, Indeed, Glassdoor, ZipRecruiter, and others in real-time via Google for Jobs, filtered to data engineering and analytics engineering roles. Each API response is written to S3 as raw JSON, preserving the full payload for reprocessing if the transformation logic changes. The current API plan has a 200 requests/month quota, which constrains run frequency and query/page volume.
 
 ## Data Model / Star Schema
 
@@ -26,7 +26,7 @@ A job posting can require multiple skills, and a skill can appear across many jo
 - **`DIM_COMPANIES`**, **`DIM_LOCATIONS`**, **`DIM_SKILLS`** — conformed dimensions
 - **`BRIDGE_JOB_SKILLS`** — resolves the many-to-many relationship between jobs and skills
 
-![Star Schema](docs/job_postings_star_schema.png)
+![Star Schema](architecture/job_postings_star_schema.png)
 
 Skill matching is driven by a seed file (`skill_category`, `skill_name`, `match_text`) that maps raw text in job descriptions to a normalized skill taxonomy, keyed off a surrogate key generated from `skill_name`.
 
@@ -99,9 +99,13 @@ source identifier.
 
 ## Analyses
 
-- **Skill Demand** — most-requested skills across postings *(caveat: `BRIDGE_JOB_SKILLS` is regex-matched, so this measures "% of postings where the taxonomy detected the skill," not "% that truly require it" — descriptions phrased outside the match patterns are undercounted)*
+-- **Role Analysis** — includes **Total Observed Postings**: distinct postings captured across all snapshot runs, including inactive ones
+![Number of postings by Role](docs/key_analysis/postings_per_role.png)
+- **Skill Demand** — most-requested skills across postings *(caveat: BRIDGE_JOB_SKILLS is regex-matched against a seed taxonomy, so this measures "% of postings where the taxonomy detected the skill," not "% that truly require it" — descriptions phrased outside the match patterns are undercounted, and the taxonomy requires periodic updates as new technologies and synonyms emerge)*
+![Skill Demand by Role](docs/key_analysis/skill_demand_per_role.png)
 - **Remote Roles** — remote vs. on-site share/trend
-- **Role Analysis** — includes **Total Observed Postings**: distinct postings captured across all snapshot runs, including inactive ones
+![Remote Roles](docs/key_analysis/remote_postings.png)
+
 
 > Company- and location-level cuts (`DIM_COMPANIES`, `DIM_LOCATIONS`) are modeled but not yet wired into an analysis — flagged under Future Enhancements.
 
@@ -124,7 +128,7 @@ source identifier.
 
 - Add Airflow scheduler for recurring extraction + dbt runs
 - Extend analyses to use `DIM_COMPANIES` and `DIM_LOCATIONS`
-- Evaluate paid API tier if 100 requests/month quota limits scheduling cadence
+- Add avg_time_role_active analysis (posting active-duration, using int_jobs scrape history) — blocked this month by API quota, to resume once quota resets
 
 ---
 
