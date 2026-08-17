@@ -31,7 +31,7 @@ many postings — a many-to-many relationship resolved with a bridge table.
 - **`BRIDGE_JOB_SKILLS`** — resolves the many-to-many relationship between
   postings and skills
 
-![Star Schema](architecture/job_postings_star_schema.png)
+![Star Schema](docs/job_postings_star_schema.png)
 
 Skill matching is driven by a seed file (`skill_lookup`:`skill_category`, `skill_name`,
 `match_text`) mapping raw job-description text to a normalized skill
