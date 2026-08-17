@@ -148,7 +148,7 @@ fact grain is one row per posting *per scrape*, not per posting.
 - **Skill Demand** — most-requested skills across postings *(caveat: BRIDGE_JOB_SKILLS is regex-matched against the `skill_lookup` seed (a manually curated skill taxonomy), so this measures "% of postings where the taxonomy detected the skill," not "% that truly require it" — descriptions phrased outside the match patterns are undercounted, and the taxonomy requires periodic updates as new technologies and synonyms
   emerge)*
 ![Skill Demand by Role](docs/key_analysis/skill_demand_per_role.png)
-- **Remote Roles** — remote vs. on-site share/trend
+- **Remote Roles** — total vs. remote share/trend
 ![Remote Roles](docs/key_analysis/remote_postings.png)
 
 
