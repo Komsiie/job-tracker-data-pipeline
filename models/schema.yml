@@ -81,14 +81,14 @@ models:
         tests:
           - not_null
 
-  - name: fct_job_postings_snapshot
+  - name: fct_job_posting_snapshot
     tests: 
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns:
             - job_posting_sk
             - scraped_at
     columns:
-    - name: fct_job_postings_sk
+    - name: fct_job_posting_sk
       description:  Surrogate key generated from job_posting_sk and scraped_at.
       tests:
         - unique

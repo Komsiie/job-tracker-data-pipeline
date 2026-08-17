@@ -143,7 +143,9 @@ fact grain is one row per posting *per scrape*, not per posting.
 ## Analyses
 
 - **Role Analysis** — postings by role, including **Total Observed Postings**:
-  distinct postings captured across all snapshot runs, including inactive ones
+  distinct postings captured across all snapshot runs, including inactive ones *(caveat: role classification is pattern-matched on job_title; titles
+  phrased outside these patterns — e.g. "Data Platform Engineer," "Software
+  Engineer, Data" — are excluded from the three tracked roles)*
 ![Number of postings by Role](docs/key_analysis/postings_per_role.png)
 - **Skill Demand** — most-requested skills across postings *(caveat: BRIDGE_JOB_SKILLS is regex-matched against the `skill_lookup` seed (a manually curated skill taxonomy), so this measures "% of postings where the taxonomy detected the skill," not "% that truly require it" — descriptions phrased outside the match patterns are undercounted, and the taxonomy requires periodic updates as new technologies and synonyms
   emerge)*
