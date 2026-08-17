@@ -20,15 +20,22 @@ Job postings are pulled from the [JSearch API](https://www.openwebninja.com/) (h
 
 ## Data Model / Star Schema
 
-A job posting can require multiple skills, and a skill can appear across many job postings — a classic many-to-many relationship. This is modeled with a bridge table pattern:
+A job posting can require multiple skills, and a skill can appear across
+many postings — a many-to-many relationship resolved with a bridge table.
 
-- **`FACT_JOB_POSTINGS_SNAPSHOT`** — one row per job posting snapshot
-- **`DIM_COMPANIES`**, **`DIM_LOCATIONS`**, **`DIM_SKILLS`** — conformed dimensions
-- **`BRIDGE_JOB_SKILLS`** — resolves the many-to-many relationship between jobs and skills
+- **`FACT_JOB_POSTING_SNAPSHOT`** — grain: one row per (posting, scrape
+  date). A posting observed across multiple scrapes produces multiple rows,
+  which enables `first_seen_date`, `last_seen_date`, and `is_active` to be
+  derived via window functions rather than loaded directly.
+- **`DIM_COMPANIES`**, **`DIM_LOCATIONS`**, **`DIM_SKILLS`** — dimensions
+- **`BRIDGE_JOB_SKILLS`** — resolves the many-to-many relationship between
+  postings and skills
 
 ![Star Schema](architecture/job_postings_star_schema.png)
 
-Skill matching is driven by a seed file (`skill_category`, `skill_name`, `match_text`) that maps raw text in job descriptions to a normalized skill taxonomy, keyed off a surrogate key generated from `skill_name`.
+Skill matching is driven by a seed file (`skill_lookup`:`skill_category`, `skill_name`,
+`match_text`) mapping raw job-description text to a normalized skill
+taxonomy, keyed off a surrogate key generated from `skill_name`.
 
 ## dbt Project Structure
 
@@ -39,17 +46,17 @@ models/
 ├── intermediate/
 │   └── int_jobs.sql          # skill extraction / parsing logic (incremental, merge)
 └── marts/
-    ├── fact_job_postings_snapshot.sql
+    ├── fact_job_posting_snapshot.sql
     ├── dim_companies.sql
     ├── dim_locations.sql
     ├── dim_skills.sql
     └── bridge_job_skills.sql
 seeds/
-└── skills_seed.csv           # skill_category, skill_name, match_text
+└── skill_lookup.csv           # skill_category, skill_name, match_text
 analyses/
-├── skill_demand.sql
+├── skill_demand_by_role.sql
 ├── remote_roles.sql
-└── role_analysis.sql
+└── postings_by_role.sql
 ```
 
 ## Key Engineering Decision: the business key
@@ -81,27 +88,65 @@ multiple employers**. Examples included related employer names such as
 This showed that using `job_uid` alone could potentially misattribute job
 postings to employers.
 
-Therefore, the pipeline uses:
+## Key Engineering Decision: the business key
 
-**`job_uid + employer_name`**
+The source API provides a `job_uid`, but analysis of the source data showed
+that `job_uid` is not globally unique across employers.
 
-as the logical business key for a job posting, with `job_posting_sk` generated
-as the warehouse surrogate key. `int_jobs` is materialized as an incremental
-model (merge strategy) on `job_uid, employer_name, scraped_at`, preserving one
-row per job per scrape rather than collapsing to latest-state — this history
-is what powers posting-active-duration analysis.
+Rather than assuming the identifier was unique, the pipeline measured how
+often the same `job_uid` appeared with multiple employers:
 
-A dbt test monitors the percentage of `job_uid`s associated with multiple
-employers. The observed baseline is **2.57%**, and the test fails if the rate
-exceeds **3%**. This provides a small tolerance for normal source-data
-variation while detecting further deterioration in the reliability of the
-source identifier.
+```sql
+SELECT
+    COUNT_IF(employer_count > 1)
+        / NULLIF(COUNT(*), 0)::FLOAT AS multiple_employer_rate
+FROM (
+    SELECT
+        job_uid,
+        COUNT(DISTINCT employer_name) AS employer_count
+    FROM {{ ref('int_jobs') }}
+    WHERE job_uid IS NOT NULL
+      AND employer_name IS NOT NULL
+    GROUP BY job_uid
+);
+```
+
+The analysis found that **2.57% of observed `job_uid`s were associated with
+multiple employers**. Examples included related employer names such as
+`State Street` / `State Street Global Advisors` and `Amazon` /
+`Amazon.com Services LLC` — suggesting inconsistent employer-name formatting
+across publishers rather than true `job_uid` reuse.
+
+This showed that using `job_uid` alone could misattribute job postings to
+employers.
+
+Therefore, the pipeline uses **`job_uid + employer_name`** as the logical
+business key for a job posting, generated as `job_posting_sk`
+
+`int_jobs` is materialized as an incremental model (merge strategy) on
+`job_uid, employer_name, scraped_at`, preserving one row per job per scrape
+rather than collapsing to latest-state — this history is what powers
+posting-active-duration analysis.
+
+The fact table's row-level primary key, `fct_job_posting_sk`, extends this
+further by combining `job_posting_sk` with the scrape timestamp, since the
+fact grain is one row per posting *per scrape*, not per posting.
+
+
+> **Ongoing data quality guardrail:** a dbt test monitors the percentage of
+> `job_uid`s associated with multiple employers. The observed baseline is
+> **2.57%**, and the test fails if the rate exceeds **3%** — a small
+> tolerance for normal source-data variation while still catching further
+> deterioration in the reliability of the source identifier.
+
 
 ## Analyses
 
--- **Role Analysis** — includes **Total Observed Postings**: distinct postings captured across all snapshot runs, including inactive ones
+- **Role Analysis** — postings by role, including **Total Observed Postings**:
+  distinct postings captured across all snapshot runs, including inactive ones
 ![Number of postings by Role](docs/key_analysis/postings_per_role.png)
-- **Skill Demand** — most-requested skills across postings *(caveat: BRIDGE_JOB_SKILLS is regex-matched against a seed taxonomy, so this measures "% of postings where the taxonomy detected the skill," not "% that truly require it" — descriptions phrased outside the match patterns are undercounted, and the taxonomy requires periodic updates as new technologies and synonyms emerge)*
+- **Skill Demand** — most-requested skills across postings *(caveat: BRIDGE_JOB_SKILLS is regex-matched against the `skill_lookup` seed (a manually curated skill taxonomy), so this measures "% of postings where the taxonomy detected the skill," not "% that truly require it" — descriptions phrased outside the match patterns are undercounted, and the taxonomy requires periodic updates as new technologies and synonyms
+  emerge)*
 ![Skill Demand by Role](docs/key_analysis/skill_demand_per_role.png)
 - **Remote Roles** — remote vs. on-site share/trend
 ![Remote Roles](docs/key_analysis/remote_postings.png)
